@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper    
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.dao.CreUserMapper">
+
+	<select id="getApiAccountInfoByUserName" resultType="main.java.cn.domain.ApiAccountInfoDomain" parameterType="string">
+		SELECT a.id,a.cre_user_id creUserId,a.name userName,a.password,a.bd_ip bdIp,a.result_pwd resultPwd,
+		       a.salt,a.delete_status flag,a.version,a.create_time createTime,a.update_time updateTime
+		FROM api_acount_info a
+		inner join cre_user c on c.id = a.cre_user_id and c.delete_status = '0'		
+		WHERE (a.name = #{userName} or c.user_phone = #{userName}) and a.delete_status = '0'
+		limit 0,1
+	</select>
+	
+	<update id="updateCreUserLoginIp" parameterType="HashMap">
+		update cre_user 
+		set last_login_ip = #{lastLoginIp}, last_login_time = now(),version = version + 1
+		where delete_status = '0' and id = (SELECT cre_user_id 
+								 from api_acount_info 
+								 where name = #{userName} and delete_status = '0')
+	</update>
+	
+	<select id="findByUserName" parameterType="string" resultType="main.java.cn.domain.CreUserDomain">
+		select c.id,c.user_email email,c.staffId,c.last_login_time lastLoginTime,c.last_login_ip lastLoginIp,c.delete_status flag,
+		       c.version,c.create_user createBy,c.create_time createTime,c.update_time updateTime,c.updateBy
+		from cre_user c
+		inner join api_acount_info a on a.cre_user_id = c.id and a.name = #{userName} and a.delete_status = '0'
+		where c.delete_status = '0'
+		limit 0,1
+	</select>
+	
+	<select id="findById" parameterType="string" resultType="main.java.cn.domain.CreUserDomain">
+		select c.id,c.user_email email,c.staffId,c.last_login_time lastLoginTime,c.last_login_ip lastLoginIp,c.delete_status flag,
+		       c.version,c.create_user createBy,c.create_time createTime,c.update_time updateTime,c.updateBy
+		from cre_user c
+		where c.delete_status = '0' and c.id = #{id}
+		limit 0,1
+	</select>
+	
+	<select id="getResultPwd" parameterType="string" resultType="string">
+		select result_pwd resultPwd
+		from api_acount_info 
+		where cre_user_id = #{creUserId} and delete_status = '0'
+	</select>
+
+	<select id="findCountByMail" parameterType="string" resultType="long">
+		select count(1)
+		from cre_user c
+		where c.delete_status = '0' and c.user_email = #{mail}
+	</select>
+	
+	<select id="findUserNameByMail" parameterType="HashMap" resultType="HashMap">
+		select a.cre_user_id userId,a.name userName
+		from  cre_user c
+		inner join api_acount_info a on a.cre_user_id = c.id and a.delete_status = '0'
+		where c.delete_status = '0' and c.user_email = #{email}
+		and (c.user_email = #{userName} or c.user_phone = #{userName} or a.name = #{userName})
+		limit 0,1
+	</select>
+	
+	<select id="findCreUserInfobyUserName" parameterType="string" resultType="HashMap">
+		SELECT c.id,c.user_email email,s.qq,a.name userName,a.result_pwd resultPwd ,ca.account
+		from cre_user c 
+		INNER JOIN api_acount_info a on a.cre_user_id = c.id and a.name = #{userName} and a.delete_status = '0'
+		INNER JOIN cre_user_account ca on ca.cre_user_id = c.id and ca.delete_status = '0'
+		LEFT JOIN staff s on s.id = c.staffId and s.flag = 1
+		where c.delete_status = '0'
+		limit 0,1
+	</select>
+	
+	<update id="bindCreUserMail" parameterType="HashMap">
+		update cre_user
+		set user_email = #{email}, version = version + 1 , update_time = now()
+		where id = #{userId} and delete_status = '0'
+	</update>
+	
+	<update id="consumeAccount" parameterType="HashMap">
+		update cre_user_account 
+		set account = account - #{count},version = version + 1 , update_time = now()
+		where cre_user_id = #{creUserId} and delete_status = '0'
+	</update>
+</mapper>

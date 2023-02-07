@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper    
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.dao.ApiAccountInfoMapper">
+
+	<update id="updateApiAccountInfo" parameterType="main.java.cn.domain.ApiAccountInfoDomain">
+		UPDATE api_acount_info
+		<trim prefix="set" suffixOverrides=",">
+			<if test="userName != null and userName != ''">
+				name = #{userName},
+			</if>
+			<if test="password != null and password != ''">
+				password = #{password},
+			</if>
+			<if test="bdIp != null and bdIp != ''">
+				bd_ip = #{bdIp},
+			</if>
+			<if test="resultPwd != null and resultPwd != ''">
+				result_pwd = #{resultPwd},
+			</if>
+			<if test="salt != null and salt != ''">
+				salt = #{salt},
+			</if>
+			<if test="flag != null and flag != ''">
+				flag = #{flag},
+			</if>
+			version = version + 1,update_time = now()
+		</trim>
+		WHERE cre_user_id=#{creUserId} and delete_status = '0'
+	</update>
+	
+	<select id="findCreUserBymail" parameterType="string" resultType="main.java.cn.domain.CreUserDomain">
+		select c.id,c.user_email email,c.staffId,c.last_login_time lastLoginTime,c.last_login_ip lastLoginIp,c.delete_status flag,
+		       c.version,c.create_user createBy,c.create_time createTime,c.update_time updateTime,c.updateBy
+		from cre_user c
+		where c.delete_status = '0' and c.user_email = #{email}
+		limit 0,1
+	</select>
+	
+	<select id="findByUserName" parameterType="string" resultType="main.java.cn.domain.ApiAccountInfoDomain">
+		SELECT a.id,a.cre_user_id creUserId,a.name userName,a.password,a.bd_ip bdIp,c.user_phone resultPwd,
+		       a.salt,a.delete_status flag,a.version,a.create_time createTime,a.update_time updateTime
+		from cre_user c 
+		INNER JOIN api_acount_info a on a.cre_user_id = c.id and a.delete_status = '0'
+		where c.delete_status = '0'
+		and (c.user_phone = #{userName} or c.user_email = #{userName} or a.`name` = #{userName})
+		limit 0,1
+	</select>
+	
+	<select id="findByUserId" parameterType="string" resultType="main.java.cn.domain.ApiAccountInfoDomain">
+		SELECT a.id,a.cre_user_id creUserId,a.name userName,a.password,a.bd_ip bdIp,a.result_pwd resultPwd,
+		       a.salt,a.delete_status flag,a.version,a.create_time createTime,a.update_time updateTime
+		from api_acount_info a 
+		where a.delete_status = '0' and a.cre_user_id = #{userId}
+		limit 0,1
+	</select>
+	
+	<insert id="saveApiAccountInfo" parameterType="main.java.cn.domain.ApiAccountInfoDomain">
+		insert into api_acount_info(cre_user_id,name,password,bd_ip,result_pwd,salt,delete_status,version,create_time,update_time)
+		select c.id cre_user_id,ifnull(#{userName},c.user_phone) name,#{password} password ,#{bdIp} bd_ip,null result_pwd,#{salt} salt,'0' delete_status,
+		       0 version,now() create_time, now() update_time
+		from cre_user c
+		where c.id = #{creUserId} 
+	</insert>
+</mapper>
